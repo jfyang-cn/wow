@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+	<meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Wow狼人杀CLUB</title>
+</head>
+<body>
+<style type="text/css">
+        .vacant
+        {
+        	background:Green;
+        }
+        .occupied
+        {
+          background:Red;
+        }
+        .dead
+        {
+          background:Gray;
+        }
+        .alive
+        {
+          background:Blue;
+        }
+</style>
+<link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+<script>
+
+ $(function () {
+
+   current_round = -1
+
+	 characters = [
+	    'Moderator',
+	    'Werewolf',
+	    'Seer',
+	    'Witch',
+	    'Hunter',
+	    'Savior',
+	    'Villager'
+	]
+	
+	cnCharacters = [
+     '法官',
+     '狼人',
+     '预言家',
+     '女巫',
+     '猎人',
+     '守卫',
+     '村民',
+  ]
+ 
+  const recreateBtn = document.querySelector('#recreate')
+  const sitBtn = document.querySelector('#sit')
+  const refreshBtn = document.querySelector('#refresh')
+  const restartBtn = document.querySelector('#restart')
+  const startBtn = document.querySelector('#start')
+  const goBtn = document.querySelector('#go')
+  const outBtn = document.querySelector('#out')
+  const attackBtn = document.querySelector('#attack')
+  const inspectBtn = document.querySelector('#inspect')
+  const poisonBtn = document.querySelector('#poison')
+  const rescueBtn = document.querySelector('#rescue')
+  const guardBtn = document.querySelector('#guard')
+  const codeText = document.querySelector('#my_code')
+
+ 
+  recreateBtn.addEventListener('click', recreate)
+  sitBtn.addEventListener('click', sit)
+  refreshBtn.addEventListener('click', refresh)
+  restartBtn.addEventListener('click', restart)
+  startBtn.addEventListener('click', start)
+  goBtn.addEventListener('click', go)
+  outBtn.addEventListener('click', out)
+  attackBtn.addEventListener('click', attack)
+  inspectBtn.addEventListener('click', inspect)
+  poisonBtn.addEventListener('click', poison)
+  rescueBtn.addEventListener('click', rescue)
+  guardBtn.addEventListener('click', guard)
+  codeText.addEventListener('focus', clearCode)
+
+  var passCollection = $(".pass");
+  $.each(passCollection, function () {
+  	$(this).bind('click', go)
+  })
+  
+  var seatCollection = $(".seat");
+  $.each(seatCollection, function () {
+    $(this).css("background","green");
+    $(this).bind('click', $(this).attr('id'), dj)
+  });
+  
+  function clearCode() {
+  	$('#my_code').val('')
+  }
+  
+  function dj(dom) {
+	    //var collection = $(".seat");
+	    //$.each(collection, function () {
+	    //	$(this).css("background","green");
+	    //});
+	    
+	    //$("#"+dom.data).css("background","red");
+	    
+	    $("#selected_num").text($("#"+dom.data).val())
+	}
+	
+	function refreshSeats(seats) {
+		var collection = $(".seat");
+    $.each(collection, function () {
+      $(this).css("background","green");
+      var v = parseInt($(this).val())
+      if (seats[v] != '') {
+      	$(this).css("background","red");
+      }
+    });
+	}
+  
+  function hideAll() {
+    for (i=0; i<characters.length; i++) {
+  		$('#'+characters[i]).hide()
+  	}
+  }
+  
+  function getSelected() {
+    return parseInt($('#selected_num').text());
+  }
+  
+  function getCode() {
+  	return $('#my_code').val();
+  }
+  
+  function sendCommand(url) {
+  	return new Promise((resolve, reject) => {
+	  	$.ajax({
+	      url: url,
+	      type: 'GET',
+	      data: {
+	      	player_no:getSelected(),
+	      	code:getCode()
+	      },
+	      success: function (res) {
+	        resolve(res)
+	      },
+	      error: function (e) {
+					reject(e)     
+	      }
+	    });
+	  })
+  }
+  
+  async function recreate() {
+  	let result = await sendCommand(`/wow/recreate`)
+  	let ret = JSON.parse(result)
+  	if (ret.code == 0) {
+  		$('#error_info').text('')
+			refresh()
+		} else {
+			$('#error_info').text(ret.reason)
+		}
+  }
+  
+ 	async function sit(){
+ 		let result = await sendCommand(`/wow/sit`)
+ 		let ret = JSON.parse(result)
+  	if (ret.code == 0) {
+  		//$('#sit').hide()
+  		//$('#my_code').hide()
+  		$('#error_info').text('')
+			refresh()
+		} else {
+			$('#my_code').text('')
+			$('#error_info').text(ret.reason)
+		}
+ 	}
+ 	
+ 	async function restart(){
+ 		let result = await sendCommand(`/wow/restart`)
+ 		let ret = JSON.parse(result)
+  	if (ret.code == 0) {
+  		$('#error_info').text('')
+			refresh()
+		} else {
+			$('#error_info').text(ret.reason)
+		}
+ 	}
+ 	
+ 	async function start(){
+ 		let result = await sendCommand(`/wow/start`)
+ 		let ret = JSON.parse(result)
+  	if (ret.code == 0) {
+  		$('#error_info').text('')
+			refresh()
+		} else {
+			$('#error_info').text(ret.reason)
+		}
+ 	}
+ 	
+ 	async function go(){
+ 		let result = await sendCommand(`/wow/go`)
+ 		let ret = JSON.parse(result)
+  	if (ret.code == 0) {
+  		$('#error_info').text('')
+			refresh()
+		} else {
+			$('#error_info').text(ret.reason)
+		}
+ 	}
+ 	
+ 	async function out(){
+ 		let result = await sendCommand(`/wow/out`)
+ 		let ret = JSON.parse(result)
+  	if (ret.code == 0) {
+  		$('#error_info').text('')
+			refresh()
+		} else {
+			$('#error_info').text(ret.reason)
+		}
+ 	}
+ 	
+  async function inspect(){
+ 		let result = await sendCommand(`/wow/inspect`)
+ 		let ret = JSON.parse(result)
+  	if (ret.code == 0) {
+  		$('#error_info').text('')
+			refresh()
+		} else {
+			$('#error_info').text(ret.reason)
+		}
+  }
+ 
+  async function attack(){
+ 		let result = await sendCommand(`/wow/attack`)
+ 		let ret = JSON.parse(result)
+  	if (ret.code == 0) {
+  		$('#error_info').text('')
+			refresh()
+		} else {
+			$('#error_info').text(ret.reason)
+		}
+ 	}
+ 	
+ 	async function poison(){
+ 		let result = await sendCommand(`/wow/poison`)
+ 		let ret = JSON.parse(result)
+  	if (ret.code == 0) {
+  		$('#error_info').text('')
+			refresh()
+		} else {
+			$('#error_info').text(ret.reason)
+		}
+ 	}
+ 	
+ 	async function rescue(){
+ 		let result = await sendCommand(`/wow/rescue`)
+ 		let ret = JSON.parse(result)
+  	if (ret.code == 0) {
+  		$('#error_info').text('')
+			refresh()
+		} else {
+			$('#error_info').text(ret.reason)
+		}
+ 	}
+ 	
+ 	async function guard(){
+ 		let result = await sendCommand(`/wow/guard`)
+ 		let ret = JSON.parse(result)
+  	if (ret.code == 0) {
+  		$('#error_info').text('')
+			refresh()
+		} else {
+			$('#error_info').text(ret.reason)
+		}
+ 	}
+ 	
+ 	function refresh(){
+ 	
+ 		$('#error_info').text('')
+ 		
+ 		hideAll()
+ 	
+ 		$.ajax({
+            url: `/wow/refresh`,
+            type: 'GET',
+            data: {
+            	player_no:getSelected(),
+            	code:getCode()
+            },
+            success: function (res) {
+                    //resolve(res)
+                    console.log(res)
+                    
+                    $('#my_role').text('')
+                    $('#round_now').text('')
+                    $('#my_seat').text('')
+                    
+                    let ret = JSON.parse(res)
+										if (ret.code == 0) {
+											$('#my_seat').text(ret.seat)
+										
+											if (ret.isModerator) {
+												
+												$('#my_role').text(cnCharacters[0])
+												$('#Moderator').show()
+												
+												if (ret.started) {
+													var collection = $(".seat");
+											    $.each(collection, function () {
+											      $(this).css("background","green");
+											      var v = parseInt($(this).val())
+											      if (ret.seats[v] == '') {
+											      	$(this).css("background","red");
+											      } else {
+											      	if (ret.players[v].alive == false) {
+											      		$(this).css("background","red");
+											      	}
+											      }
+											    });
+											    
+											    if (current_round != ret.round) {
+											    	current_round = ret.round
+											    	filename = current_round + ".mp3"
+														playAudio(filename)
+													}
+											    
+										    }
+										    
+											}
+										
+											if (!ret.started) {
+												$('#round_now').text("请选择座位")
+										  	refreshSeats(ret.seats)
+										  	$('#view'+ret.role).text('')
+											} else {
+											  current_round = ret.round
+												$('#round_now').text(cnCharacters[ret.round]+"正在操作")
+												if (ret.role >= 0) {
+													character = characters[ret.role]
+													console.log(character)
+													$('#my_role').text(cnCharacters[ret.role])
+													$('#'+character).show()
+													$('#view'+ret.role).text(ret.roleView)
+												}
+											}
+																			
+										}
+                    
+                    
+            },
+            error: function (e) {
+                    //reject(e)
+                    console.log(e)
+            }
+    });
+    
+    //AudioPerform()
+ 	}
+ 	
+ 	function playAudio(filename) {
+			
+      var ua = navigator.userAgent.toLowerCase();
+      var audiopath = "/static/"+filename;
+      //console.log(ua)
+      if (ua.match(/msie ([\d.]+)/)) {
+          jQuery('#alert_sound').html('<object classid="clsid:22D6F312-B0F6-11D0-94AB-0080C74C7E95"><param name="Autovacant" value="1" /><param name="Src" value="' + audiopath + '" /></object>');
+      }
+      else if (ua.match(/firefox\/([\d.]+)/)) {
+          //            jQuery('#alert_sound').html('<embed src="' + audiopath + '" type="audio/mp3" hidden="true" loop="false" mastersound></embed>');
+          //jQuery('#alert_sound').html('<audio autoplay="autoplay"><source src="' + audiopath + '" type="audio/mp3"/><source src= type="audio/mpeg"/></audio>');
+      }
+      else if (ua.match(/chrome\/([\d.]+)/)) {
+          jQuery('#alert_sound').html('<audio src="' + audiopath + '" type="audio/mp3" autoplay=”autoplay” hidden="true"></audio>');
+      }
+      else if (ua.match(/opera.([\d.]+)/)) {
+          jQuery('#alert_sound').html('<embed src="' + audiopath + '" hidden="true" loop="false"><noembed><bgsounds src=' + audiopath + '></noembed>');
+      }
+      else if (ua.match(/version\/([\d.]+).*safari/)) {
+          jQuery('#alert_sound').html('<audio src="' + audiopath + '" type="audio/mp3" autoplay=”autoplay” hidden="true"></audio>');
+      }
+      else {
+          jQuery('#alert_sound').html('<embed src="' + audiopath + '" type="audio/mp3" hidden="true" loop="false" mastersound></embed>');
+      }
+  }
+  
+  setInterval(function(){
+		//console.log("循环执行");
+		refresh();
+	}, 15000);
+	
+ 	
+ })
+ 
+</script>
+
+<div data-role="page" id="pageone" class="ui-footer">
+
+<div data-position="fixed" style="text-align:right;">
+<span>
+<nobr id="round_now"></nobr>
+</span>
+</div>
+
+<span>
+<nobr id="my_seat"></nobr>号玩家，你的身份是：<nobr id="my_role"></nobr>
+</span>
+<div>
+<input type="button" id="refresh" value="刷新"  >
+<input type="button" id="sit" value="坐"  >
+<input type="text" id="my_code" maxlength=3 size=3 value="" data-role="none" >
+<nobr id="error_info"></nobr>
+</div>
+
+<span>
+选择号码：<nobr id="selected_num">0</nobr>
+</span>
+<div>
+	<input type="button" id="btn0" value="0" class="seat">
+	<input type="button" id="btn1" value="1" class="seat">
+	<input type="button" id="btn2" value="2" class="seat">
+	<input type="button" id="btn3" value="3" class="seat">
+	<input type="button" id="btn4" value="4" class="seat">
+	<input type="button" id="btn5" value="5" class="seat">
+	<input type="button" id="btn6" value="6" class="seat">
+	<input type="button" id="btn7" value="7" class="seat">
+	<input type="button" id="btn8" value="8" class="seat">
+	<input type="button" id="btn9" value="9" class="seat">
+</div>
+
+<span>
+请选择操作
+</span>
+<div id='Moderator'>
+	<div id="alert_sound"></div>
+	<div>
+		<input type="button" id="recreate" value="重建" >
+		<input type="button" id="restart" value="重开" >
+		<input type="button" id="start" value="开始" >
+		<input type="button" id="go" value="继续" >
+		<input type="button" id="out" value="淘汰" >
+	</div>
+	<span>
+		<nobr id="view0"></nobr>
+	</span>
+</div>
+
+
+<div id='Werewolf'>
+	<input type="button" class="pass" value="过" >
+	<input type="button" id="attack" value="杀" >
+	<nobr id="view1"></nobr>
+</div>
+
+<div id='Seer'>
+	<div>
+		<input type="button" class="pass" value="过" >
+		<input type="button" id="inspect" value="验" >
+	</div>
+	<span>
+		<nobr id="view2"></nobr>
+	</span>
+</div>
+
+<div id='Witch'>
+	<div>
+		<input type="button" class="pass" value="过" >
+		<input type="button" id="poison" value="毒" >
+		<input type="button" id="rescue" value="救" >
+	</div>
+	<span>
+		<nobr id="view3"></nobr>
+	</span>
+</div>
+
+<div id='Hunter'>
+	<div>
+	<input type="button" class="pass" value="过" >
+	</div>
+	<span>
+		<nobr id="view4"></nobr>
+	</span>
+</div>
+
+<div id='Savior'>
+	<input type="button" class="pass" value="过" >
+	<input type="button" id="guard" value="守" >
+	<nobr id="view5"></nobr>
+</div>
+
+<div id='Villager'>
+<nobr id="view6"></nobr>
+</div>
+
+</div> 
+</body>
+</html>
