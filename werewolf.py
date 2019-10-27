@@ -31,10 +31,31 @@ info = {
     'player_out': '%d号玩家出局',
     'has_gun': '你的开枪状态是%s',
     'player_die': '%d号玩家死亡',
+    'nobody_die': '昨夜没有玩家死亡',
 }
+
+error = {
+    'success':'操作成功',
+    'code_is_empty':'密码不能为空',
+    'seat_occupied':'座位被占，请选择其他座位',
+    'select_seat_first':'请选择一个座位',
+    'game_not_start':'游戏未开始',
+    'moderator_only':'只有法官才能执行该操作',
+    'not_your_round':'当前不是你的操作轮次',
+    'inspect_reject':'不能重复验人',
+    'guard_reject':'不能重复守人',
+    'attack_reject':'不能重复刀人',
+    'medicine_reject':'不能重复用药',
+}
+
+def info_arg0(key):
+    return info[key]
 
 def info_arg1(key, arg1):
     return info[key] % (arg1)
+
+def err_reason(key):
+    return error[key]
 
 class Room:
     
@@ -44,22 +65,35 @@ class Room:
     # 清除座位信息
     def clear(self):
         self._seats=['']*10
+        self._seats[0] = '000'    # 法官密码为000
         
         # debugging
-        for i in range(len(self._seats)):
-            self._seats[i] = str(i)
+#         for i in range(len(self._seats)):
+#             self._seats[i] = str(i)
     
     # 选择座位
     def sit(self, seat_no, code):
-        if self._seats[seat_no] == '':
-            for seat in self._seats:
-                # 禁止code相同
-                if seat == code:
-                    return False
-
+        
+        if code == '':
+            return -1, err_reason('code_is_empty')
+        
+        # 上次游戏玩家
+        for i, seat in enumerate(self._seats):
+            # code相同
+            if seat == code:
+                return i, ''
+        
+        # 新加入玩家
+        if seat_no > 0:
+            # 位置不为空
+            if self._seats[seat_no] != '':
+                return -1, err_reason('seat_occupied')
+                
+            # 保存code
             self._seats[seat_no] = code
-            return True
-        return False
+            return seat_no, ''
+        
+        return -1, err_reason('select_seat_first')
     
     # 获取玩家号
     def seat(self, code):
@@ -243,7 +277,7 @@ class GameRound():
                     ret += info_arg1('player_die', i)
                     ret += ' '
             else:
-                ret = '昨夜没有玩家死亡'
+                ret = info_arg0('nobody_die')
             return ret
         elif role == 2:            # Seer
             if self._inspected > 0:

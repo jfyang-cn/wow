@@ -100,12 +100,12 @@
   }
   
   function dj(dom) {
-	    //var collection = $(".seat");
-	    //$.each(collection, function () {
-	    //	$(this).css("background","green");
-	    //});
+	    /*var collection = $(".seat");
+	    $.each(collection, function () {
+	    	$(this).css("background","green");
+	    });
 	    
-	    //$("#"+dom.data).css("background","red");
+	    $("#"+dom.data).css("background","red");*/
 	    
 	    $("#selected_num").text($("#"+dom.data).val())
 	}
@@ -168,9 +168,13 @@
  	async function sit(){
  		let result = await sendCommand(`/wow/sit`)
  		let ret = JSON.parse(result)
-  	if (ret.code == 0) {
-  		//$('#sit').hide()
-  		//$('#my_code').hide()
+  	if (ret.code >= 0) {
+  		
+  		// comment for debugging 
+  		$('#code_panel').hide()
+  		$('#moderator_seat').hide()
+  		
+  		$('#my_label').show()
   		$('#error_info').text('')
 			refresh()
 		} else {
@@ -333,7 +337,8 @@
 											}
 										
 											if (!ret.started) {
-												$('#round_now').text("请选择座位")
+												$('#round_now').text("请选择玩家号码")
+												//$('#round_now').text("输入上次的密码恢复游戏，新加入玩家请选择空位再输入密码登录，法官密码000")
 										  	refreshSeats(ret.seats)
 										  	$('#view'+ret.role).text('')
 											} else {
@@ -392,6 +397,13 @@
 		refresh();
 	}, 15000);
 	
+	
+	//hideAll()
+	
+	$('#my_label').hide()
+	$('#moderator_seat').hide()
+	
+	refresh()
  	
  })
  
@@ -405,35 +417,46 @@
 </span>
 </div>
 
-<span>
-<nobr id="my_seat"></nobr>号玩家，你的身份是：<nobr id="my_role"></nobr>
+<span id="my_label">
+<nobr id="my_seat"></nobr>号玩家身份：<nobr id="my_role"></nobr>
 </span>
 <div>
 <input type="button" id="refresh" value="刷新"  >
-<input type="button" id="sit" value="坐"  >
-<input type="text" id="my_code" maxlength=3 size=3 value="" data-role="none" >
 <nobr id="error_info"></nobr>
 </div>
 
 <span>
-选择号码：<nobr id="selected_num">0</nobr>
+1. 选择玩家号码：<nobr id="selected_num">1</nobr>
 </span>
 <div>
-	<input type="button" id="btn0" value="0" class="seat">
-	<input type="button" id="btn1" value="1" class="seat">
-	<input type="button" id="btn2" value="2" class="seat">
-	<input type="button" id="btn3" value="3" class="seat">
-	<input type="button" id="btn4" value="4" class="seat">
-	<input type="button" id="btn5" value="5" class="seat">
-	<input type="button" id="btn6" value="6" class="seat">
-	<input type="button" id="btn7" value="7" class="seat">
-	<input type="button" id="btn8" value="8" class="seat">
-	<input type="button" id="btn9" value="9" class="seat">
+	<div id="moderator_seat">
+		<span>法官<span>
+		<input type="button" id="btn0" value="0" class="seat">
+	</div>
+	<div>
+		<span><span>
+		<input type="button" id="btn1" value="1" class="seat">
+		<input type="button" id="btn2" value="2" class="seat">
+		<input type="button" id="btn3" value="3" class="seat">
+		<input type="button" id="btn4" value="4" class="seat">
+		<input type="button" id="btn5" value="5" class="seat">
+		<input type="button" id="btn6" value="6" class="seat">
+		<input type="button" id="btn7" value="7" class="seat">
+		<input type="button" id="btn8" value="8" class="seat">
+		<input type="button" id="btn9" value="9" class="seat">
+	</div>
 </div>
 
 <span>
-请选择操作
+2. 请选择操作
 </span>
+
+<div id="code_panel">
+	请输入密码：<input type="text" id="my_code" maxlength=3 size=3 value="" data-role="none" >
+	<input type="button" id="sit" value="登录"  >
+	<div>注：直接输入上次的密码可恢复游戏，法官密码000</div>
+</div>
+
 <div id='Moderator'>
 	<div id="alert_sound"></div>
 	<div>

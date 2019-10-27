@@ -2,7 +2,7 @@
 import numpy as np
 from flask import Flask, url_for
 from flask import request
-from werewolf import Room, GameRound, Game
+from werewolf import Room, GameRound, Game, err_reason
 import json
 import logging
 
@@ -21,6 +21,21 @@ room_one = Room()
 game_one = None
 game_round = None
 
+# 构造返回消息
+def encode_response(result=0, error_code='success'):
+    reason = err_reason(error_code)
+    return json.dumps({'code': result, 'reason': reason}, ensure_ascii=False) 
+
+def round_verify(code):
+    if game_one is None or game_one.status() != 1:
+        return -1, 'game_not_start'
+
+    seat = room_one.seat(code)
+    if game_round.verify(seat) is not True:
+        return -1, 'not_your_round'
+    
+    return 0, ''
+
 # 重新创建房间
 @app.route('/wow/recreate', methods=['GET', 'POST'])
 def recreate():
@@ -29,7 +44,7 @@ def recreate():
     room_one.clear()
     game_one = None
     game_round = None
-    return json.dumps({'code': 0, 'reason': 'success'}, ensure_ascii=False) 
+    return encode_response()
 
 # 选择座位
 @app.route('/wow/sit', methods=['GET', 'POST'])
@@ -39,11 +54,7 @@ def sit():
     player_no = int(request.args.get("player_no"))
     code = request.args.get("code")
     
-    ret = 0
-    res = 'success'
-    if room_one.sit(player_no, code) is False:
-        res = '密码相同或者该位置已经被占'
-        ret = -1
+    ret, res = room_one.sit(player_no, code)
     return json.dumps({'code': ret, 'reason': res}, ensure_ascii=False)
 
 # 重新开始游戏
@@ -53,12 +64,9 @@ def restart():
     
     player_no = int(request.args.get("player_no"))
     code = request.args.get("code")
-    res = 'success'
-    ret = 0
     
     if room_one.seat(code) != 0:
-        res = '只有法官才能执行该操作'
-        ret = -1
+        return encode_response(-1, 'moderator_only')
     else:
         # 9 players
         board = [1,1,1,2,3,4,6,6,6]
@@ -68,7 +76,7 @@ def restart():
         game_one = Game(board, room_one.players())
         game_round = GameRound(game_one)
     
-    return json.dumps({'code': ret, 'reason': res}, ensure_ascii=False) 
+    return encode_response()
 
 # 开始游戏
 @app.route('/wow/start', methods=['GET', 'POST'])
@@ -77,12 +85,9 @@ def start():
     
     player_no = int(request.args.get("player_no"))
     code = request.args.get("code")
-    res = 'success'
-    ret = 0
     
     if room_one.seat(code) != 0:
-        res = '只有法官才能执行该操作'
-        ret = -1
+        return encode_response(-1, 'moderator_only')
     else:
         if game_one is None:
             # 9 players
@@ -96,7 +101,7 @@ def start():
         else:
             game_one.start()
 
-    return json.dumps({'code': ret, 'reason': res}, ensure_ascii=False)
+    return encode_response()
 
 # 获取最新信息
 @app.route('/wow/refresh', methods=['GET', 'POST'])
@@ -104,8 +109,6 @@ def refresh():
     
     player_no = int(request.args.get("player_no"))
     code = request.args.get("code")
-    res = 'success'
-    ret = 0
     
     player_array = []
     isModerator = room_one.isModerator(code)
@@ -129,7 +132,7 @@ def refresh():
                 ndict = player.to_dict()
                 player_array.append(ndict)   
 
-    return json.dumps({'code': ret, 
+    return json.dumps({'code': 0, 
                        'reason': 'success', 
                        'started':started,
                        'isModerator':isModerator,
@@ -140,133 +143,116 @@ def refresh():
                        'seats':room_one.players(),
                        'players':player_array}, ensure_ascii=False)
 
-# 完成当前步骤
+# 完成当前步骤，游戏继续
 @app.route('/wow/go', methods=['GET', 'POST'])
 def go():
     player_no = int(request.args.get("player_no"))
     code = request.args.get("code")
-    res = 'success'
-    seat = room_one.seat(code)
     
     if game_one is None or game_one.status() != 1:
-        return json.dumps({'code': -1, 'reason': '游戏还为开始，请点击开始'}, ensure_ascii=False) 
-    
+        return encode_response(-1, 'game_not_start')
+
+    seat = room_one.seat(code)
     if game_round.verify(seat) is not True:
-        return json.dumps({'code': -1, 'reason': '当前不是你的操作轮次'}, ensure_ascii=False) 
+        return encode_response(-1, 'not_your_round')
     
-    ret = game_round.go()
-    return json.dumps({'code': 0, 'reason': 'success', 'round':ret}, ensure_ascii=False) 
+    game_round.go()
+    return encode_response()
 
 # 玩家出局
 @app.route('/wow/out', methods=['GET', 'POST'])
 def out():
     player_no = int(request.args.get("player_no"))
     code = request.args.get("code")
-    res = 'success'
     
     if game_one is None or game_one.status() != 1:
-        return json.dumps({'code': -1, 'reason': '游戏还为开始，请点击开始'}, ensure_ascii=False) 
+        return encode_response(-1, 'game_not_start')
     
     if room_one.seat(code) != 0:
-        res = '只有法官才能执行该操作'
-    else:
-        game_one.out(player_no)
-    return json.dumps({'code': 0, 'reason': player_no}, ensure_ascii=False) 
+        return encode_response(-1, 'moderator_only')
+    
+    game_one.out(player_no)
+    return encode_response()
 
 # 验人
 @app.route('/wow/inspect', methods=['GET', 'POST'])
 def inspect():
     player_no = int(request.args.get("player_no"))
     code = request.args.get("code")
-    res = 'success'
     
-    if game_one is None or game_one.status() != 1:
-        return json.dumps({'code': -1, 'reason': '游戏还为开始，请点击开始'}, ensure_ascii=False) 
-    
-    seat = room_one.seat(code)
-    if game_round.verify(seat) is not True:
-        return json.dumps({'code': -1, 'reason': '当前不是你的操作轮次'}, ensure_ascii=False) 
+    ret, err = round_verify(code)
+    if ret < 0:
+        return encode_response(ret, err)
     
     if game_round.inspect(player_no) is not True:
-        return json.dumps({'code': -1, 'reason': '不能重复验人'}, ensure_ascii=False)
+        return encode_response(-1, 'inspect_reject')
+    
 #     game_round.go()
-    return json.dumps({'code': 0, 'reason': res}, ensure_ascii=False) 
+    return encode_response()
 
 # 守人
 @app.route('/wow/guard', methods=['GET', 'POST'])
 def guard():
     player_no = int(request.args.get("player_no"))
     code = request.args.get("code")
-    res = 'success'
     
-    if game_one is None or game_one.status() != 1:
-        return json.dumps({'code': -1, 'reason': '游戏还为开始，请点击开始'}, ensure_ascii=False) 
-    
-    seat = room_one.seat(code)
-    if game_round.verify(seat) is not True:
-        return json.dumps({'code': -1, 'reason': '当前不是你的操作轮次'}, ensure_ascii=False) 
+    ret, err = round_verify(code)
+    if ret < 0:
+        return encode_response(ret, err)
     
     if game_round.guard(player_no) is not True:
-        return json.dumps({'code': -1, 'reason': '不能重复守人'}, ensure_ascii=False)
+        return encode_response(-1, 'guard_reject')
+
 #     game_round.go()
-    return json.dumps({'code': 0, 'reason': res}, ensure_ascii=False) 
+    return encode_response()
 
 # 刀人
 @app.route('/wow/attack', methods=['GET', 'POST'])
 def attack():
     player_no = int(request.args.get("player_no"))
     code = request.args.get("code")
-    res = 'success'
     
-    if game_one is None or game_one.status() != 1:
-        return json.dumps({'code': -1, 'reason': '游戏还为开始，请点击开始'}, ensure_ascii=False) 
-    
-    seat = room_one.seat(code)
-    if game_round.verify(seat) is not True:
-        return json.dumps({'code': -1, 'reason': '当前不是你的操作轮次'}, ensure_ascii=False) 
+    ret, err = round_verify(code)
+    if ret < 0:
+        return encode_response(ret, err)
     
     if game_round.attack(player_no) is not True:
-        return json.dumps({'code': -1, 'reason': '不能重复刀人'}, ensure_ascii=False)
+        return encode_response(-1, 'attack_reject')
+    
 #     game_round.go()
-    return json.dumps({'code': 0, 'reason': res}, ensure_ascii=False) 
+    return encode_response() 
 
 # 撒毒
 @app.route('/wow/poison', methods=['GET', 'POST'])
 def poison():
     player_no = int(request.args.get("player_no"))
     code = request.args.get("code")
-    res = 'success'
     
-    if game_one is None or game_one.status() != 1:
-        return json.dumps({'code': -1, 'reason': '游戏还为开始，请点击开始'}, ensure_ascii=False) 
-    
-    seat = room_one.seat(code)
-    if game_round.verify(seat) is not True:
-        return json.dumps({'code': -1, 'reason': '当前不是你的操作轮次'}, ensure_ascii=False) 
+    ret, err = round_verify(code)
+    if ret < 0:
+        return encode_response(ret, err)
     
     if game_round.poison(player_no) is not True:
-        return json.dumps({'code': -1, 'reason': '不能重复用药'}, ensure_ascii=False)
+        return encode_response(-1, 'medicine_reject')
+    
 #     game_round.go()
-    return json.dumps({'code': 0, 'reason': res}, ensure_ascii=False) 
+    return encode_response() 
 
 # 救人
 @app.route('/wow/rescue', methods=['GET', 'POST'])
 def rescue():
     player_no = int(request.args.get("player_no"))
     code = request.args.get("code")
-    res = 'success'
     
-    if game_one is None or game_one.status() != 1:
-        return json.dumps({'code': -1, 'reason': '游戏还为开始，请点击开始'}, ensure_ascii=False) 
-    
-    seat = room_one.seat(code)
-    if game_round.verify(seat) is not True:
-        return json.dumps({'code': -1, 'reason': '当前不是你的操作轮次'}, ensure_ascii=False) 
+    ret, err = round_verify(code)
+    if ret < 0:
+        return encode_response(ret, err)
     
     if game_round.rescue() is not True:
-        return json.dumps({'code': -1, 'reason': '不能重复用药'}, ensure_ascii=False)
+        return encode_response(-1, 'medicine_reject')
+
 #     game_round.go()
-    return json.dumps({'code': 0, 'reason': res}, ensure_ascii=False) 
+    return encode_response() 
 
 # then start the server
 if __name__ == "__main__":
