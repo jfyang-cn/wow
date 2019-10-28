@@ -42,7 +42,8 @@
 	    'Witch',
 	    'Hunter',
 	    'Savior',
-	    'Villager'
+	    'Villager',
+	    'Idiot',
 	]
 	
 	cnCharacters = [
@@ -53,6 +54,7 @@
      '猎人',
      '守卫',
      '村民',
+     '白痴',
   ]
  
   const recreateBtn = document.querySelector('#recreate')
@@ -115,9 +117,35 @@
     $.each(collection, function () {
       $(this).css("background","green");
       var v = parseInt($(this).val())
-      if (seats[v] != '') {
-      	$(this).css("background","red");
-      }
+      if (v < seats.length) {
+	      if (seats[v] != '') {
+	      	$(this).css("background","red");
+	      }
+	    } else {
+	    	$(this).parent().css('display','none');
+	    }
+    });
+	}
+	
+	function refreshPlayers(seats, players) {
+		var collection = $(".seat");
+    $.each(collection, function () {
+      var v = parseInt($(this).val())
+      if (v < seats.length) {
+	      if (seats[v] == '') {
+	      	$(this).css("background","red");
+	      } else {
+	      	if (v < players.length) {
+		      	if (players[v].alive == false) {
+		      		$(this).css("background","red");
+		      	} else {
+		      		$(this).css("background","green");
+		      	}
+		      }
+	      }
+	    } else {
+	    	$(this).parent().css('display','none');
+	    }
     });
 	}
   
@@ -307,43 +335,35 @@
 										if (ret.code == 0) {
 											$('#my_seat').text(ret.seat)
 										
+											// 法官播音乐
 											if (ret.isModerator) {
 												
 												$('#my_role').text(cnCharacters[0])
 												$('#Moderator').show()
 												
 												if (ret.started) {
-													var collection = $(".seat");
-											    $.each(collection, function () {
-											      $(this).css("background","green");
-											      var v = parseInt($(this).val())
-											      if (ret.seats[v] == '') {
-											      	$(this).css("background","red");
-											      } else {
-											      	if (ret.players[v].alive == false) {
-											      		$(this).css("background","red");
-											      	}
-											      }
-											    });
-											    
 											    if (current_round != ret.round) {
 											    	current_round = ret.round
 											    	filename = current_round + ".mp3"
 														playAudio(filename)
-													}
-											    
-										    }
-										    
+													} 
+										    }										    
 											}
 										
 											if (!ret.started) {
+												// 游戏未开始
 												$('#round_now').text("请选择玩家号码")
 												//$('#round_now').text("输入上次的密码恢复游戏，新加入玩家请选择空位再输入密码登录，法官密码000")
-										  	refreshSeats(ret.seats)
 										  	$('#view'+ret.role).text('')
+										  	
+										  	// 刷新位置状态
+										  	refreshSeats(ret.seats)
 											} else {
+												// 游戏开始
 											  current_round = ret.round
 												$('#round_now').text(cnCharacters[ret.round]+"正在操作")
+												
+												// 打开玩家角色视图
 												if (ret.role >= 0) {
 													character = characters[ret.role]
 													console.log(character)
@@ -351,6 +371,9 @@
 													$('#'+character).show()
 													$('#view'+ret.role).text(ret.roleView)
 												}
+												
+												// 刷新玩家状态
+												refreshPlayers(ret.seats, ret.players)
 											}
 																			
 										}
@@ -433,17 +456,43 @@
 		<span>法官<span>
 		<input type="button" id="btn0" value="0" class="seat">
 	</div>
-	<div>
-		<span><span>
-		<input type="button" id="btn1" value="1" class="seat">
-		<input type="button" id="btn2" value="2" class="seat">
-		<input type="button" id="btn3" value="3" class="seat">
-		<input type="button" id="btn4" value="4" class="seat">
-		<input type="button" id="btn5" value="5" class="seat">
-		<input type="button" id="btn6" value="6" class="seat">
-		<input type="button" id="btn7" value="7" class="seat">
-		<input type="button" id="btn8" value="8" class="seat">
-		<input type="button" id="btn9" value="9" class="seat">
+	<div data-inline="true">
+		<span>
+			<input type="button" id="btn1" value="1" class="seat">
+		</span>
+		<span>
+			<input type="button" id="btn2" value="2" class="seat">
+		</span>
+		<span>
+			<input type="button" id="btn3" value="3" class="seat">
+		</span>
+		<span>
+			<input type="button" id="btn4" value="4" class="seat">
+		</span>
+		<span>
+			<input type="button" id="btn5" value="5" class="seat">
+		</span>
+		<span>
+			<input type="button" id="btn6" value="6" class="seat">
+		</span>
+		<span>
+			<input type="button" id="btn7" value="7" class="seat">
+		</span>
+		<span>
+			<input type="button" id="btn8" value="8" class="seat">
+		</span>
+		<span>
+			<input type="button" id="btn9" value="9" class="seat">
+		</span>
+		<span>
+			<input type="button" id="btn10" value="10" class="seat">
+		</span>
+		<span>
+			<input type="button" id="btn11" value="11" class="seat">
+		</span>
+		<span>
+			<input type="button" id="btn12" value="12" class="seat">
+		</span>
 	</div>
 </div>
 
@@ -454,7 +503,7 @@
 <div id="code_panel">
 	请输入密码：<input type="text" id="my_code" maxlength=3 size=3 value="" data-role="none" >
 	<input type="button" id="sit" value="登录"  >
-	<div>注：直接输入上次的密码可恢复游戏，法官密码000</div>
+	<div>注：使用旧密码登录恢复游戏，法官密码000</div>
 </div>
 
 <div id='Moderator'>

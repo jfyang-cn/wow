@@ -14,10 +14,16 @@ static_folder = '/home/philyang/git/wow/static'
 global room_one, game_one, game_round
 # 9 players
 board = [1,1,1,2,3,4,6,6,6]
+
+debug_board = [1,2,3,4,5,6,7]
+
+boards = {
+    '1':[1,1,1,2,3,4,6,6,6]
+}
 np.random.shuffle(board)
 board.insert(0,0)
 
-room_one = Room()
+room_one = Room(8)
 game_one = None
 game_round = None
 
@@ -41,7 +47,7 @@ def round_verify(code):
 def recreate():
     global room_one, game_one, game_round
     
-    room_one.clear()
+    room_one = Room(8)
     game_one = None
     game_round = None
     return encode_response()
@@ -69,11 +75,12 @@ def restart():
         return encode_response(-1, 'moderator_only')
     else:
         # 9 players
-        board = [1,1,1,2,3,4,6,6,6]
+#         board = [1,1,1,2,3,4,6,6,6]
+        board = debug_board
         np.random.shuffle(board)
         board.insert(0,0)
 
-        game_one = Game(board, room_one.players())
+        game_one = Game(board, room_one)
         game_round = GameRound(game_one)
     
     return encode_response()
@@ -91,11 +98,12 @@ def start():
     else:
         if game_one is None:
             # 9 players
-            board = [1,1,1,2,3,4,6,6,6]
+#             board = [1,1,1,2,3,4,6,6,6]
+            board = debug_board
             np.random.shuffle(board)
             board.insert(0,0)
 
-            game_one = Game(board, room_one.players())
+            game_one = Game(board, room_one)
             game_round = GameRound(game_one)
             game_one.start()
         else:
@@ -127,7 +135,7 @@ def refresh():
             role = players[seat].role
             roleView = game_round.roleView(role)
             
-        if (seat == 0):
+#         if (seat == 0):
             for player in players:
                 ndict = player.to_dict()
                 player_array.append(ndict)   

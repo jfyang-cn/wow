@@ -2,12 +2,13 @@
 
 characters = [
     'Moderator', # 0
-    'Werewolf', # 1
+    'Werewolf',  # 1
     'Seer',      # 2
     'Witch',     # 3
     'Hunter',    # 4
     'Savior',    # 5
     'Villager',  # 6
+    'Idoit',     # 7
 ]
 
 # characters = [
@@ -59,12 +60,13 @@ def err_reason(key):
 
 class Room:
     
-    def __init__(self):
+    def __init__(self, player_num):
+        self.player_num = player_num
         self.clear()
 
     # 清除座位信息
     def clear(self):
-        self._seats=['']*10
+        self._seats=['']*self.player_num
         self._seats[0] = '000'    # 法官密码为000
         
         # debugging
@@ -98,7 +100,7 @@ class Room:
     # 获取玩家号
     def seat(self, code):
         if code != '':
-            for i in range(10):
+            for i in range(self.player_num):
                 if self._seats[i] == code:
                     return i
         return -1
@@ -134,8 +136,9 @@ class Player:
         
 class Game:
     
-    def __init__(self, board, players):
+    def __init__(self, board, room):
         self.board = board
+        self.room = room
         
         self._players = []
         
@@ -147,8 +150,8 @@ class Game:
                 
         self._status = 0   # 0 not started, 1 playing, 2 end
         
-        for i in range(10):
-            self._players.append(Player(i, board[i], players[i]))
+        for i in range(len(board)):
+            self._players.append(Player(i, board[i], room.players()[i]))
 
     # 开始游戏
     def start(self):
